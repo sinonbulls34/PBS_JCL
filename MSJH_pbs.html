@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>不分類資源班增強點數系統 - 嘉義市民生國中</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
+
+        :root {
+            --bg-color: #FDFBF7;
+            --card-bg: #FFFFFF;
+            --border-soft: #E0D7C6;
+            --text-main: #4A4439;
+            --text-muted: #8E8474;
+            --primary-color: #8BA88E; 
+            --point-bg: #FEF9E7;
+            --point-text: #B87333;
+            --btn-sub-5: #C27878; 
+            --btn-sub-1: #DCA3A3; 
+            --btn-add-1: #A3C2A3; 
+            --btn-add-5: #78A378; 
+            --nav-bg: #FFFFFF;
+            --nav-active: #8BA88E;
+            --nav-inactive: #C4C4C4;
+        }
+
+        body {
+            font-family: 'Iansui', '芫荽', 'Klee One', 'PingFang TC', '微軟正黑體', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px 20px 100px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 雲端狀態提示 */
+        .cloud-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 2000;
+        }
+
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+        }
+        .dot-loading { background-color: #FFB347; animation: blink 1s infinite; }
+        .dot-success { background-color: #78A378; }
+        .dot-error { background-color: #C27878; }
+        @keyframes blink { 0% {opacity: 0.3;} 50% {opacity: 1;} 100% {opacity: 0.3;} }
+
+        .header-container {
+            background-color: var(--card-bg);
+            width: 100%; max-width: 900px; border-radius: 30px;
+            padding: 15px 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-soft); display: flex;
+            justify-content: space-between; align-items: center;
+            margin-bottom: 20px; box-sizing: border-box; margin-top: 40px;
+        }
+
+        .time-display { font-size: 1.1rem; font-weight: 600; color: var(--text-muted); }
+        .period-display { font-size: 1.2rem; font-weight: bold; color: white; background: var(--primary-color); padding: 6px 20px; border-radius: 20px; letter-spacing: 1px; }
+
+        .controls-container { width: 100%; max-width: 900px; margin-bottom: 25px; }
+        .control-group { background-color: var(--card-bg); padding: 15px 30px; border-radius: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: center; }
+        .control-group label { font-size: 1.2rem; font-weight: 600; margin-right: 20px; letter-spacing: 2px; }
+        select { padding: 8px 15px; font-size: 1.2rem; border: 1px solid var(--border-soft); border-radius: 12px; background-color: #FFF; color: var(--text-main); cursor: pointer; width: 200px; text-align: center; font-family: inherit; }
+
+        .view-container { width: 100%; max-width: 900px; display: none; }
+        .view-container.active { display: block; }
+
+        /* 點數視圖 */
+        .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .student-card { background-color: var(--card-bg); border-radius: 20px; padding: 20px; border: 1px solid var(--border-soft); display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: transform 0.2s ease; }
+        .student-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
+        .student-name { font-size: 1.6rem; font-weight: 600; margin-bottom: 10px; letter-spacing: 1px; }
+        .point-badge { width: 75px; height: 75px; background-color: var(--point-bg); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; border: 3px solid var(--point-text); }
+        .point-number { font-size: 2.2rem; font-weight: 600; color: var(--point-text); font-family: inherit; }
+        .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+        button.action-btn { border: none; border-radius: 12px; padding: 10px 0; font-size: 1.1rem; font-weight: 600; color: white; cursor: pointer; font-family: inherit; transition: opacity 0.2s, transform 0.1s; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+        button.action-btn:active { transform: scale(0.92); }
+        button.action-btn:hover { opacity: 0.85; }
+        .btn-sub-5 { background-color: var(--btn-sub-5); } .btn-sub-1 { background-color: var(--btn-sub-1); } .btn-add-1 { background-color: var(--btn-add-1); } .btn-add-5 { background-color: var(--btn-add-5); }
+
+        /* 排名視圖 */
+        .ranking-list { display: flex; flex-direction: column; gap: 15px; }
+        .ranking-item { display: flex; align-items: center; background-color: var(--card-bg); padding: 15px 25px; border-radius: 20px; border: 1px solid var(--border-soft); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .rank-num { font-size: 1.8rem; font-weight: bold; color: var(--primary-color); width: 50px; }
+        .rank-1 { color: #FFD700; font-size: 2.2rem; } .rank-2 { color: #C0C0C0; font-size: 2rem; } .rank-3 { color: #CD7F32; font-size: 1.9rem; }
+        .rank-name { font-size: 1.6rem; flex: 1; font-weight: 600; }
+        .rank-points { font-size: 1.6rem; font-weight: bold; color: var(--point-text); background: var(--point-bg); padding: 5px 20px; border-radius: 15px; }
+
+        /* 紀錄視圖 */
+        .history-list { display: flex; flex-direction: column; gap: 10px; }
+        .history-item { background-color: var(--card-bg); padding: 15px 20px; border-radius: 15px; border-left: 5px solid var(--primary-color); display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .history-item.negative { border-left-color: var(--btn-sub-5); }
+        .history-time { color: var(--text-muted); font-size: 1rem; width: 160px;}
+        .history-info { flex: 1; font-weight: 600; }
+        .history-delta { font-weight: bold; font-size: 1.4rem; }
+        .delta-pos { color: var(--btn-add-5); } .delta-neg { color: var(--btn-sub-5); }
+
+        .empty-state { text-align: center; color: var(--text-muted); font-size: 1.2rem; padding: 40px; }
+
+        /* 底部導覽列 */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--nav-bg); box-shadow: 0 -4px 15px rgba(0,0,0,0.05); display: flex; justify-content: center; padding: 10px 0 15px 0; z-index: 1000; }
+        .nav-container { width: 100%; max-width: 900px; display: flex; justify-content: space-around; }
+        .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; color: var(--nav-inactive); font-family: inherit; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; }
+        .nav-btn.active { color: var(--nav-active); transform: translateY(-3px); }
+        .nav-icon { font-size: 1.8rem; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="cloud-status" id="cloud-status">
+        <div class="status-dot dot-loading" id="status-dot"></div>
+        <span id="status-text">連線雲端中...</span>
+    </div>
+
+    <div class="header-container">
+        <div class="time-display" id="date-time-display">...</div>
+        <div class="period-display" id="period-display">...</div>
+    </div>
+
+    <div class="controls-container">
+        <div class="control-group">
+            <label for="group-select">目前組別</label>
+            <select id="group-select" disabled>
+                <option value="">資料載入中...</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="view-points" class="view-container active">
+        <div class="student-grid" id="student-grid">
+            <div class="empty-state">請稍候，正在從雲端讀取資料...</div>
+        </div>
+    </div>
+
+    <div id="view-ranking" class="view-container">
+        <div class="ranking-list" id="ranking-list"></div>
+    </div>
+
+    <div id="view-records" class="view-container">
+        <div class="history-list" id="history-list"></div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-container">
+            <button class="nav-btn active" onclick="switchView('points')" id="nav-points">
+                <span class="nav-icon">⭐</span><span>點數</span>
+            </button>
+            <button class="nav-btn" onclick="switchView('ranking')" id="nav-ranking">
+                <span class="nav-icon">🏆</span><span>排名</span>
+            </button>
+            <button class="nav-btn" onclick="switchView('records')" id="nav-records">
+                <span class="nav-icon">🕒</span><span>紀錄</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        // ==========================================
+        // ⚠️ 請將下方的引號內容替換成您剛剛複製的 Web App 網址
+        // ==========================================
+        const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbxnUhCFs6kt-gbzwt1SD5PVkDYyub7VZN7vAVpOhyIXSmewULRDmyafiKGDBTXSWrUS2w/execE";
+
+        const studentsData = {
+            "２Ｃ": ["陳采稼", "楊依潔", "李虹渝", "李婭琳", "黃偉耕", "吳柏毅", "黃益庠", "梁永明"],
+            "１Ａ": ["羅煒晴", "葉和頤", "莊軒暠", "蕭卉均", "賴奕叡", "吳其叡", "蔡盈盈", "林子苓"],
+            "１Ｂ": ["蘇翊凱", "曾泰瑄", "謝若曦", "黃甫暄", "陳廷宥", "許帛軒"],
+            "１Ｃ": ["吳冠旻", "凃禹楷", "黃育璿", "林埕億", "李威霆"],
+            "跨Ｄ": ["游雲欣", "張芳瑜", "詹濬溢", "陳勝宏", "李芷若", "林孮翰"],
+            "視障": ["蔣采芹", "林佳芳", "陳采稼"]
+        };
+
+        const schedule = [
+            { name: "早自修", start: 7 * 60 + 30, end: 8 * 60 + 15 },
+            { name: "第一節", start: 8 * 60 + 16, end: 9 * 60 + 0 },
+            { name: "第二節", start: 9 * 60 + 15, end: 10 * 60 + 0 },
+            { name: "第三節", start: 10 * 60 + 10, end: 10 * 60 + 55 },
+            { name: "第四節", start: 11 * 60 + 5,  end: 11 * 60 + 50 },
+            { name: "午休",   start: 12 * 60 + 35, end: 13 * 60 + 20 },
+            { name: "第五節", start: 13 * 60 + 30, end: 14 * 60 + 15 },
+            { name: "第六節", start: 14 * 60 + 25, end: 15 * 60 + 10 },
+            { name: "第七節", start: 15 * 60 + 20, end: 16 * 60 + 5 },
+            { name: "第八節", start: 16 * 60 + 15, end: 17 * 60 + 0 }
+        ];
+
+        let studentPoints = {};
+        let actionHistory = [];
+        let currentView = 'points';
+        let isCloudReady = false;
+
+        // UI 狀態更新函式
+        function setCloudStatus(status) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            dot.className = 'status-dot'; // reset
+            
+            if (status === 'loading') {
+                dot.classList.add('dot-loading');
+                text.innerText = '雲端同步中...';
+            } else if (status === 'success') {
+                dot.classList.add('dot-success');
+                text.innerText = '已與雲端同步';
+            } else if (status === 'error') {
+                dot.classList.add('dot-error');
+                text.innerText = '雲端連線失敗';
+            }
+        }
+
+        // 初始化：從雲端讀取資料
+        async function fetchFromCloud() {
+            if(GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_URL_HERE") {
+                setCloudStatus('error');
+                alert("請先在程式碼中填入您的 Google Web App 網址！");
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_API_URL);
+                const data = await response.json();
+                studentPoints = data.points || {};
+                actionHistory = data.history || [];
+                
+                isCloudReady = true;
+                setCloudStatus('success');
+                
+                // 解鎖下拉選單並還原選項
+                const select = document.getElementById('group-select');
+                select.disabled = false;
+                select.innerHTML = `
+                    <option value="">-- 請選擇組別 --</option>
+                    <option value="２Ｃ">２Ｃ</option>
+                    <option value="１Ａ">１Ａ</option>
+                    <option value="１Ｂ">１Ｂ</option>
+                    <option value="１Ｃ">１Ｃ</option>
+                    <option value="跨Ｄ">跨Ｄ</option>
+                    <option value="視障">視障</option>
+                `;
+                
+                document.getElementById('student-grid').innerHTML = '<div class="empty-state">請先於上方選擇組別</div>';
+            } catch (error) {
+                console.error("讀取失敗", error);
+                setCloudStatus('error');
+            }
+        }
+
+        // 將變更儲存至雲端
+        function saveToCloud() {
+            setCloudStatus('loading');
+            fetch(GOOGLE_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    points: studentPoints,
+                    history: actionHistory
+                }),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' } // 避免跨域預檢錯誤
+            })
+            .then(res => res.text())
+            .then(text => { setCloudStatus('success'); })
+            .catch(err => { console.error(err); setCloudStatus('error'); });
+        }
+
+        function switchView(viewName) {
+            currentView = viewName;
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${viewName}`).classList.add('active');
+            document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            renderCurrentView();
+        }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('date-time-display').innerText = now.toLocaleDateString('zh-TW', {year:'numeric', month:'2-digit', day:'2-digit', weekday:'long'});
+            const mins = now.getHours() * 60 + now.getMinutes();
+            let period = "休息時間";
+            for (let p of schedule) { if (mins >= p.start && mins <= p.end) { period = p.name; break; } }
+            document.getElementById('period-display').innerText = period;
+        }
+
+        // 點數更動核心邏輯
+        function changePoint(name, delta) {
+            if (!isCloudReady) return;
+
+            const group = document.getElementById('group-select').value;
+            if (!group) return;
+
+            studentPoints[name] = (studentPoints[name] || 0) + delta;
+            if (studentPoints[name] < 0) studentPoints[name] = 0;
+
+            const now = new Date();
+            const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            
+            actionHistory.unshift({ id: Date.now(), time: timeStr, group: group, name: name, delta: delta });
+            if(actionHistory.length > 500) actionHistory.pop(); // 防止資料過度膨脹
+
+            // 畫面先更新 (樂觀更新 Optimistic UI)
+            renderCurrentView();
+            
+            // 背景同步至雲端
+            saveToCloud();
+        }
+
+        function renderCurrentView() {
+            if (!isCloudReady) return;
+            const group = document.getElementById('group-select').value;
+            if (currentView === 'points') renderPoints(group);
+            else if (currentView === 'ranking') renderRanking(group);
+            else if (currentView === 'records') renderRecords(group);
+        }
+
+        function renderPoints(group) {
+            const grid = document.getElementById('student-grid');
+            if (!group) { grid.innerHTML = '<div class="empty-state">請先於上方選擇組別</div>'; return; }
+            grid.innerHTML = "";
+            studentsData[group].forEach(name => {
+                const pts = studentPoints[name] || 0;
+                const card = document.createElement('div');
+                card.className = 'student-card';
+                card.innerHTML = `
+                    <div class="student-name">${name}</div>
+                    <div class="point-badge"><span class="point-number">${pts}</span></div>
+                    <div class="btn-group">
+                        <button class="action-btn btn-sub-5" onclick="changePoint('${name}', -5)">-5</button>
+                        <button class="action-btn btn-sub-1" onclick="changePoint('${name}', -1)">-1</button>
+                        <button class="action-btn btn-add-1" onclick="changePoint('${name}', 1)">+1</button>
+                        <button class="action-btn btn-add-5" onclick="changePoint('${name}', 5)">+5</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderRanking(group) {
+            const list = document.getElementById('ranking-list');
+            if (!group) { list.innerHTML = '<div class="empty-state">請先於上方選擇組別觀看排名</div>'; return; }
+            let students = [...studentsData[group]];
+            students.sort((a, b) => (studentPoints[b] || 0) - (studentPoints[a] || 0));
+            list.innerHTML = "";
+            students.forEach((name, index) => {
+                const pts = studentPoints[name] || 0;
+                const item = document.createElement('div');
+                item.className = 'ranking-item';
+                let rankDisplay = index + 1; let rankClass = '';
+                if(index === 0) { rankDisplay = '🥇'; rankClass = 'rank-1'; }
+                else if(index === 1) { rankDisplay = '🥈'; rankClass = 'rank-2'; }
+                else if(index === 2) { rankDisplay = '🥉'; rankClass = 'rank-3'; }
+                item.innerHTML = `<div class="rank-num ${rankClass}">${rankDisplay}</div><div class="rank-name">${name}</div><div class="rank-points">${pts} 點</div>`;
+                list.appendChild(item);
+            });
+        }
+
+        function renderRecords(group) {
+            const list = document.getElementById('history-list');
+            if (!group) { list.innerHTML = '<div class="empty-state">請先於上方選擇組別觀看紀錄</div>'; return; }
+            const groupHistory = actionHistory.filter(log => log.group === group);
+            if (groupHistory.length === 0) { list.innerHTML = '<div class="empty-state">目前尚無增減點數紀錄</div>'; return; }
+            list.innerHTML = "";
+            groupHistory.forEach(log => {
+                const item = document.createElement('div');
+                const isPositive = log.delta > 0;
+                item.className = `history-item ${isPositive ? '' : 'negative'}`;
+                const sign = isPositive ? '+' : '';
+                const deltaClass = isPositive ? 'delta-pos' : 'delta-neg';
+                item.innerHTML = `<div class="history-time">${log.time}</div><div class="history-info">${log.name}</div><div class="history-delta ${deltaClass}">${sign}${log.delta}</div>`;
+                list.appendChild(item);
+            });
+        }
+
+        document.getElementById('group-select').addEventListener('change', renderCurrentView);
+        window.onload = () => { 
+            updateTime(); 
+            setInterval(updateTime, 60000); 
+            fetchFromCloud(); // 網頁開啟時，第一件事就是去雲端抓資料
+        };
+    </script>
+</body>
+</html>
