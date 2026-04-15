@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>不分類資源班增強點數系統 - 嘉義市民生國中</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
+
+        :root {
+            --bg-color: #FDFBF7;
+            --card-bg: #FFFFFF;
+            --border-soft: #E0D7C6;
+            --text-main: #4A4439;
+            --text-muted: #8E8474;
+            --primary-color: #8BA88E; 
+            --point-bg: #FEF9E7;
+            --point-text: #B87333;
+            
+            /* 按鈕漸層柔和色調 */
+            --btn-sub-5: #C27878; 
+            --btn-sub-1: #DCA3A3; 
+            --btn-add-1: #A3C2A3; 
+            --btn-add-5: #78A378; 
+
+            /* 導覽列顏色 */
+            --nav-bg: #FFFFFF;
+            --nav-active: #8BA88E;
+            --nav-inactive: #C4C4C4;
+        }
+
+        body {
+            font-family: 'Iansui', '芫荽', 'Klee One', 'PingFang TC', '微軟正黑體', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px 20px 100px 20px; /* 底部留白給導覽列 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            border-radius: 30px;
+            padding: 15px 35px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-soft);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .time-display {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .period-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            background: var(--primary-color);
+            padding: 6px 20px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+        }
+
+        .controls-container {
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 25px;
+        }
+
+        .control-group {
+            background-color: var(--card-bg);
+            padding: 15px 30px;
+            border-radius: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-right: 20px;
+            letter-spacing: 2px;
+        }
+
+        select {
+            padding: 8px 15px;
+            font-size: 1.2rem;
+            border: 1px solid var(--border-soft);
+            border-radius: 12px;
+            background-color: #FFF;
+            color: var(--text-main);
+            cursor: pointer;
+            width: 200px;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        /* 視圖區域容器 */
+        .view-container {
+            width: 100%;
+            max-width: 900px;
+            display: none; /* 預設隱藏，透過JS控制顯示 */
+        }
+
+        .view-container.active {
+            display: block;
+        }
+
+        /* ====== 1. 點數視圖專用 ====== */
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .student-card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-soft);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            transition: transform 0.2s ease;
+        }
+
+        .student-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
+
+        .student-name { font-size: 1.6rem; font-weight: 600; margin-bottom: 10px; letter-spacing: 1px; }
+
+        .point-badge {
+            width: 75px; height: 75px;
+            background-color: var(--point-bg);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            margin-bottom: 15px;
+            border: 3px solid var(--point-text);
+        }
+
+        .point-number { font-size: 2.2rem; font-weight: 600; color: var(--point-text); font-family: inherit; }
+
+        .btn-group {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%;
+        }
+
+        button.action-btn {
+            border: none; border-radius: 12px; padding: 10px 0;
+            font-size: 1.1rem; font-weight: 600; color: white;
+            cursor: pointer; font-family: inherit;
+            transition: opacity 0.2s, transform 0.1s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+
+        button.action-btn:active { transform: scale(0.92); }
+        button.action-btn:hover { opacity: 0.85; }
+
+        .btn-sub-5 { background-color: var(--btn-sub-5); }
+        .btn-sub-1 { background-color: var(--btn-sub-1); }
+        .btn-add-1 { background-color: var(--btn-add-1); }
+        .btn-add-5 { background-color: var(--btn-add-5); }
+
+        /* ====== 2. 排名視圖專用 ====== */
+        .ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 20px;
+            border: 1px solid var(--border-soft);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+
+        .rank-num {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            width: 50px;
+        }
+
+        .rank-1 { color: #FFD700; font-size: 2.2rem; } /* 第一名金牌色 */
+        .rank-2 { color: #C0C0C0; font-size: 2rem; }   /* 第二名銀牌色 */
+        .rank-3 { color: #CD7F32; font-size: 1.9rem; } /* 第三名銅牌色 */
+
+        .rank-name {
+            font-size: 1.6rem;
+            flex: 1;
+            font-weight: 600;
+        }
+
+        .rank-points {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: var(--point-text);
+            background: var(--point-bg);
+            padding: 5px 20px;
+            border-radius: 15px;
+        }
+
+        /* ====== 3. 紀錄視圖專用 ====== */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            background-color: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 15px;
+            border-left: 5px solid var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .history-item.negative { border-left-color: var(--btn-sub-5); }
+        .history-time { color: var(--text-muted); font-size: 1rem; width: 160px;}
+        .history-info { flex: 1; font-weight: 600; }
+        .history-delta { font-weight: bold; font-size: 1.4rem; }
+        .delta-pos { color: var(--btn-add-5); }
+        .delta-neg { color: var(--btn-sub-5); }
+
+        .empty-state { text-align: center; color: var(--text-muted); font-size: 1.2rem; padding: 40px; }
+
+        /* 分享按鈕 */
+        .share-btn {
+            background-color: var(--primary-color);
+            padding: 12px 30px; border-radius: 50px;
+            font-size: 1.1rem; color: white; border: none;
+            box-shadow: 0 4px 15px rgba(139, 168, 142, 0.4);
+            cursor: pointer; font-family: inherit; font-weight: 600;
+            margin: 30px auto 0 auto; display: none;
+        }
+        .share-btn:active { transform: scale(0.95); }
+
+        /* ====== 底部導覽列 ====== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background-color: var(--nav-bg);
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            padding: 10px 0 15px 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            width: 100%; max-width: 900px;
+            display: flex; justify-content: space-around;
+        }
+
+        .nav-btn {
+            background: none; border: none;
+            display: flex; flex-direction: column; align-items: center;
+            color: var(--nav-inactive);
+            font-family: inherit; font-weight: 600; font-size: 1.1rem;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+
+        .nav-btn.active { color: var(--nav-active); transform: translateY(-3px); }
+        .nav-icon { font-size: 1.8rem; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <div class="time-display" id="date-time-display">...</div>
+        <div class="period-display" id="period-display">...</div>
+    </div>
+
+    <div class="controls-container">
+        <div class="control-group">
+            <label for="group-select">目前組別</label>
+            <select id="group-select">
+                <option value="">-- 請選擇組別 --</option>
+                <option value="２Ｃ">２Ｃ</option>
+                <option value="１Ａ">１Ａ</option>
+                <option value="１Ｂ">１Ｂ</option>
+                <option value="１Ｃ">１Ｃ</option>
+                <option value="跨Ｄ">跨Ｄ</option>
+                <option value="視障">視障</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="view-points" class="view-container active">
+        <div class="student-grid" id="student-grid">
+            <div class="empty-state">請先於上方選擇組別</div>
+        </div>
+        <button class="share-btn" id="share-btn" onclick="generateShareLink()">📤 產生目前點數分享連結</button>
+    </div>
+
+    <div id="view-ranking" class="view-container">
+        <div class="ranking-list" id="ranking-list"></div>
+    </div>
+
+    <div id="view-records" class="view-container">
+        <div class="history-list" id="history-list"></div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-container">
+            <button class="nav-btn active" onclick="switchView('points')" id="nav-points">
+                <span class="nav-icon">⭐</span>
+                <span>點數</span>
+            </button>
+            <button class="nav-btn" onclick="switchView('ranking')" id="nav-ranking">
+                <span class="nav-icon">🏆</span>
+                <span>排名</span>
+            </button>
+            <button class="nav-btn" onclick="switchView('records')" id="nav-records">
+                <span class="nav-icon">🕒</span>
+                <span>紀錄</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        const studentsData = {
+            "２Ｃ": ["陳采稼", "楊依潔", "李虹渝", "李婭琳", "黃偉耕", "吳柏毅", "黃益庠", "梁永明"],
+            "１Ａ": ["羅煒晴", "葉和頤", "莊軒暠", "蕭卉均", "賴奕叡", "吳其叡", "蔡盈盈", "林子苓"],
+            "１Ｂ": ["蘇翊凱", "曾泰瑄", "謝若曦", "黃甫暄", "陳廷宥", "許帛軒"],
+            "１Ｃ": ["吳冠旻", "凃禹楷", "黃育璿", "林埕億", "李威霆"],
+            "跨Ｄ": ["游雲欣", "張芳瑜", "詹濬溢", "陳勝宏", "李芷若", "林孮翰"],
+            "視障": ["蔣采芹", "林佳芳", "陳采稼"]
+        };
+
+        const schedule = [
+            { name: "早自修", start: 7 * 60 + 30, end: 8 * 60 + 15 },
+            { name: "第一節", start: 8 * 60 + 16, end: 9 * 60 + 0 },
+            { name: "第二節", start: 9 * 60 + 15, end: 10 * 60 + 0 },
+            { name: "第三節", start: 10 * 60 + 10, end: 10 * 60 + 55 },
+            { name: "第四節", start: 11 * 60 + 5,  end: 11 * 60 + 50 },
+            { name: "午休",   start: 12 * 60 + 35, end: 13 * 60 + 20 },
+            { name: "第五節", start: 13 * 60 + 30, end: 14 * 60 + 15 },
+            { name: "第六節", start: 14 * 60 + 25, end: 15 * 60 + 10 },
+            { name: "第七節", start: 15 * 60 + 20, end: 16 * 60 + 5 },
+            { name: "第八節", start: 16 * 60 + 15, end: 17 * 60 + 0 }
+        ];
+
+        let studentPoints = JSON.parse(localStorage.getItem('spedPointsDB')) || {};
+        let actionHistory = JSON.parse(localStorage.getItem('spedHistoryDB')) || [];
+        let currentView = 'points'; // 預設視圖
+
+        // === 視圖切換邏輯 ===
+        function switchView(viewName) {
+            currentView = viewName;
+            
+            // 更新導覽列UI
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${viewName}`).classList.add('active');
+
+            // 更新顯示區塊
+            document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+
+            // 根據不同視圖渲染畫面
+            renderCurrentView();
+        }
+
+        // === 時間更新邏輯 ===
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('date-time-display').innerText = now.toLocaleDateString('zh-TW', {year:'numeric', month:'2-digit', day:'2-digit', weekday:'long'});
+            const mins = now.getHours() * 60 + now.getMinutes();
+            let period = "休息時間";
+            for (let p of schedule) { if (mins >= p.start && mins <= p.end) { period = p.name; break; } }
+            document.getElementById('period-display').innerText = period;
+        }
+
+        // === 點數更動與紀錄邏輯 ===
+        function changePoint(name, delta) {
+            const group = document.getElementById('group-select').value;
+            if (!group) return;
+
+            // 更新點數
+            studentPoints[name] = (studentPoints[name] || 0) + delta;
+            if (studentPoints[name] < 0) studentPoints[name] = 0; // 防呆不小於0
+            localStorage.setItem('spedPointsDB', JSON.stringify(studentPoints));
+
+            // 寫入歷史紀錄
+            const now = new Date();
+            const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            
+            actionHistory.unshift({ 
+                id: Date.now(),
+                time: timeStr, 
+                group: group, 
+                name: name, 
+                delta: delta 
+            });
+
+            // 限制紀錄筆數避免佔用過多快取 (保留最新500筆)
+            if(actionHistory.length > 500) actionHistory.pop();
+            localStorage.setItem('spedHistoryDB', JSON.stringify(actionHistory));
+
+            renderCurrentView();
+        }
+
+        // === 統一渲染入口 ===
+        function renderCurrentView() {
+            const group = document.getElementById('group-select').value;
+            
+            if (currentView === 'points') renderPoints(group);
+            else if (currentView === 'ranking') renderRanking(group);
+            else if (currentView === 'records') renderRecords(group);
+        }
+
+        // 1. 渲染點數視圖 (原始陣列順序，不自動排序)
+        function renderPoints(group) {
+            const grid = document.getElementById('student-grid');
+            const shareBtn = document.getElementById('share-btn');
+
+            if (!group) {
+                grid.innerHTML = '<div class="empty-state">請先於上方選擇組別</div>';
+                shareBtn.style.display = "none";
+                return;
+            }
+
+            shareBtn.style.display = "block";
+            grid.innerHTML = "";
+            
+            // 按照原始陣列順序呈現
+            studentsData[group].forEach(name => {
+                const pts = studentPoints[name] || 0;
+                const card = document.createElement('div');
+                card.className = 'student-card';
+                card.innerHTML = `
+                    <div class="student-name">${name}</div>
+                    <div class="point-badge"><span class="point-number">${pts}</span></div>
+                    <div class="btn-group">
+                        <button class="action-btn btn-sub-5" onclick="changePoint('${name}', -5)">-5</button>
+                        <button class="action-btn btn-sub-1" onclick="changePoint('${name}', -1)">-1</button>
+                        <button class="action-btn btn-add-1" onclick="changePoint('${name}', 1)">+1</button>
+                        <button class="action-btn btn-add-5" onclick="changePoint('${name}', 5)">+5</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 2. 渲染排名視圖 (分數由高到低)
+        function renderRanking(group) {
+            const list = document.getElementById('ranking-list');
+            if (!group) {
+                list.innerHTML = '<div class="empty-state">請先於上方選擇組別觀看排名</div>';
+                return;
+            }
+
+            let students = [...studentsData[group]];
+            // 排序：分數高的在前面
+            students.sort((a, b) => (studentPoints[b] || 0) - (studentPoints[a] || 0));
+
+            list.innerHTML = "";
+            students.forEach((name, index) => {
+                const pts = studentPoints[name] || 0;
+                const item = document.createElement('div');
+                item.className = 'ranking-item';
+                
+                // 冠亞季軍特殊符號與顏色
+                let rankDisplay = index + 1;
+                let rankClass = '';
+                if(index === 0) { rankDisplay = '🥇'; rankClass = 'rank-1'; }
+                else if(index === 1) { rankDisplay = '🥈'; rankClass = 'rank-2'; }
+                else if(index === 2) { rankDisplay = '🥉'; rankClass = 'rank-3'; }
+
+                item.innerHTML = `
+                    <div class="rank-num ${rankClass}">${rankDisplay}</div>
+                    <div class="rank-name">${name}</div>
+                    <div class="rank-points">${pts} 點</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // 3. 渲染紀錄視圖 (過濾當前組別的紀錄)
+        function renderRecords(group) {
+            const list = document.getElementById('history-list');
+            if (!group) {
+                list.innerHTML = '<div class="empty-state">請先於上方選擇組別觀看紀錄</div>';
+                return;
+            }
+
+            // 過濾出這個組別的紀錄
+            const groupHistory = actionHistory.filter(log => log.group === group);
+
+            if (groupHistory.length === 0) {
+                list.innerHTML = '<div class="empty-state">目前尚無增減點數紀錄</div>';
+                return;
+            }
+
+            list.innerHTML = "";
+            groupHistory.forEach(log => {
+                const item = document.createElement('div');
+                const isPositive = log.delta > 0;
+                item.className = `history-item ${isPositive ? '' : 'negative'}`;
+                
+                const sign = isPositive ? '+' : '';
+                const deltaClass = isPositive ? 'delta-pos' : 'delta-neg';
+                const actionText = isPositive ? '獲得' : '扣除';
+
+                item.innerHTML = `
+                    <div class="history-time">${log.time}</div>
+                    <div class="history-info">${log.name}</div>
+                    <div class="history-delta ${deltaClass}">${sign}${log.delta}</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // === 網址參數解析與分享功能 ===
+        function checkURLParams() {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                try {
+                    const sharedData = JSON.parse(decodeURIComponent(hash));
+                    studentPoints = { ...studentPoints, ...sharedData };
+                    localStorage.setItem('spedPointsDB', JSON.stringify(studentPoints));
+                    alert("已成功匯入分享的點數資料！");
+                    window.location.hash = "";
+                } catch (e) { console.error("資料解析失敗"); }
+            }
+        }
+
+        function generateShareLink() {
+            const group = document.getElementById('group-select').value;
+            if (!group) return;
+            const dataToShare = {};
+            studentsData[group].forEach(name => { dataToShare[name] = studentPoints[name] || 0; });
+            const jsonStr = JSON.stringify(dataToShare);
+            const shareUrl = window.location.origin + window.location.pathname + "#" + encodeURIComponent(jsonStr);
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert("分享連結已產生並複製到剪貼簿！");
+            });
+        }
+
+        // === 系統初始化 ===
+        document.getElementById('group-select').addEventListener('change', renderCurrentView);
+        window.onload = () => { 
+            checkURLParams(); 
+            updateTime(); 
+            setInterval(updateTime, 60000); 
+            renderCurrentView(); 
+        };
+    </script>
+</body>
+</html>
