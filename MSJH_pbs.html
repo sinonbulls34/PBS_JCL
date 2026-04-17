@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>不分類資源班增強點數系統 - 嘉義市民生國中</title>
+    <title>不分類資源班點數增強系統 - 嘉義市民生國中</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
 
@@ -16,6 +16,7 @@
             --primary-color: #8BA88E; 
             --point-bg: #FEF9E7;
             --point-text: #B87333;
+            --point-negative: #C27878; /* 負數專用顏色 */
             --btn-sub-5: #C27878; 
             --btn-sub-1: #DCA3A3; 
             --btn-add-1: #A3C2A3; 
@@ -36,7 +37,6 @@
             align-items: center;
         }
 
-        /* 雲端狀態提示 */
         .cloud-status {
             position: fixed; top: 20px; right: 20px; background-color: #fff;
             padding: 8px 15px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -71,13 +71,17 @@
         .student-card { background-color: var(--card-bg); border-radius: 20px; padding: 20px; border: 1px solid var(--border-soft); display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
         .student-name { font-size: 1.6rem; font-weight: 600; margin-bottom: 10px; }
         .point-badge { width: 75px; height: 75px; background-color: var(--point-bg); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; border: 3px solid var(--point-text); }
+        /* 負分時的徽章邊框改色 */
+        .point-badge.negative { border-color: var(--point-negative); background-color: #FFF5F5; }
         .point-number { font-size: 2.2rem; font-weight: 600; color: var(--point-text); }
+        .point-number.negative { color: var(--point-negative); }
+
         .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
         button.action-btn { border: none; border-radius: 12px; padding: 10px 0; font-size: 1.1rem; font-weight: 600; color: white; cursor: pointer; transition: transform 0.1s; }
         button.action-btn:active { transform: scale(0.92); }
         .btn-sub-5 { background-color: var(--btn-sub-5); } .btn-sub-1 { background-color: var(--btn-sub-1); } .btn-add-1 { background-color: var(--btn-add-1); } .btn-add-5 { background-color: var(--btn-add-5); }
 
-        /* 排名視圖與動態獎牌 */
+        /* 排名與動態獎牌 */
         .ranking-list { display: flex; flex-direction: column; gap: 12px; }
         .ranking-item { display: flex; align-items: center; background-color: var(--card-bg); padding: 15px 25px; border-radius: 20px; border: 1px solid var(--border-soft); }
         .rank-num { font-size: 2rem; width: 60px; display: flex; justify-content: center; }
@@ -91,6 +95,7 @@
 
         .rank-name { font-size: 1.5rem; flex: 1; font-weight: 600; }
         .rank-points { font-size: 1.4rem; font-weight: bold; color: var(--point-text); background: var(--point-bg); padding: 5px 15px; border-radius: 12px; }
+        .rank-points.negative { color: var(--point-negative); background: #FFF5F5; }
 
         /* 紀錄視圖 */
         .record-section-title { font-size: 1.2rem; font-weight: bold; margin: 20px 0 10px 0; color: var(--primary-color); display: flex; align-items: center; gap: 8px; }
@@ -160,12 +165,10 @@
             <label>查詢日期</label>
             <input type="date" id="record-date-picker">
         </div>
-
         <div class="record-section-title">📊 當日增強點數結算</div>
         <div class="daily-summary-card">
             <div class="summary-grid" id="daily-summary-grid"></div>
         </div>
-
         <div class="record-section-title">📜 詳細加減點歷程</div>
         <div class="history-list" id="history-list"></div>
     </div>
@@ -212,13 +215,11 @@
             { name: "第八節", start: 16 * 60 + 15, end: 17 * 60 + 0 }
         ];
 
-        // 結構調整為：{ "科目": { "姓名": 分數 } }
         let studentPoints = {};
         let actionHistory = [];
         let currentView = 'points';
         let isCloudReady = false;
 
-        // UI 狀態更新
         function setCloudStatus(status) {
             const dot = document.getElementById('status-dot');
             const text = document.getElementById('status-text');
@@ -259,11 +260,11 @@
             if (!group) return;
 
             if (!studentPoints[subject]) studentPoints[subject] = {};
+            // 【移除限制】：直接加減，不判斷是否小於 0
             studentPoints[subject][name] = (studentPoints[subject][name] || 0) + delta;
-            if (studentPoints[subject][name] < 0) studentPoints[subject][name] = 0;
 
             const now = new Date();
-            const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+            const dateStr = now.toISOString().split('T')[0];
             const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
             
             actionHistory.unshift({ 
@@ -282,10 +283,11 @@
             if (!group) { grid.innerHTML = '<div class="empty-state">請選擇組別</div>'; return; }
             grid.innerHTML = studentsData[group].map(name => {
                 const pts = (studentPoints[subject] && studentPoints[subject][name]) || 0;
+                const isNeg = pts < 0;
                 return `
                     <div class="student-card">
                         <div class="student-name">${name}</div>
-                        <div class="point-badge"><span class="point-number">${pts}</span></div>
+                        <div class="point-badge ${isNeg ? 'negative' : ''}"><span class="point-number ${isNeg ? 'negative' : ''}">${pts}</span></div>
                         <div class="btn-group">
                             <button class="action-btn btn-sub-5" onclick="changePoint('${name}', -5)">-5</button>
                             <button class="action-btn btn-sub-1" onclick="changePoint('${name}', -1)">-1</button>
@@ -305,13 +307,14 @@
             );
             list.innerHTML = sorted.map((name, i) => {
                 const pts = (studentPoints[subject] && studentPoints[subject][name]) || 0;
+                const isNeg = pts < 0;
                 let rClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
                 let rIcon = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
                 return `
                     <div class="ranking-item">
                         <div class="rank-num ${rClass}">${rIcon}</div>
                         <div class="rank-name">${name}</div>
-                        <div class="rank-points">${pts} 點</div>
+                        <div class="rank-points ${isNeg ? 'negative' : ''}">${pts} 點</div>
                     </div>`;
             }).join('');
         }
@@ -321,10 +324,8 @@
             const summaryGrid = document.getElementById('daily-summary-grid');
             const subject = document.getElementById('subject-select').value;
             const targetDate = document.getElementById('record-date-picker').value;
-
             if (!group) { historyList.innerHTML = summaryGrid.innerHTML = '<div class="empty-state">請選擇組別</div>'; return; }
 
-            // 1. 當日結算邏輯
             const dayLogs = actionHistory.filter(log => log.group === group && log.subject === subject && log.date === targetDate);
             const summary = {};
             studentsData[group].forEach(n => summary[n] = 0);
@@ -340,7 +341,6 @@
                     </div>`;
             }).join('');
 
-            // 2. 詳細歷程 (顯示該組別、該科目、該日期的紀錄)
             historyList.innerHTML = dayLogs.length ? dayLogs.map(log => `
                 <div class="history-item ${log.delta < 0 ? 'negative' : ''}">
                     <div class="history-time">${log.time}</div>
