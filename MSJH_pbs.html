@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>不分類資源班點數增強系統 - 嘉義市民生國中</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
+        /* 匯入思源黑體 Noto Sans TC */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
         :root {
             --bg-color: #FDFBF7;
@@ -16,18 +17,22 @@
             --primary-color: #8BA88E; 
             --point-bg: #FEF9E7;
             --point-text: #B87333;
-            --point-negative: #C27878; /* 負數專用顏色 */
-            --btn-sub-5: #C27878; 
-            --btn-sub-1: #DCA3A3; 
-            --btn-add-1: #A3C2A3; 
-            --btn-add-5: #78A378; 
+            --point-negative: #D25E5E; 
+            
+            /* 重新調整的按鈕配色邏輯：深紅、淺紅、淺綠、深綠 */
+            --btn-sub-5: #D25E5E; 
+            --btn-sub-1: #ECA4A4; 
+            --btn-add-1: #A3D2A3; 
+            --btn-add-5: #65A865; 
+            
             --nav-bg: #FFFFFF;
             --nav-active: #8BA88E;
             --nav-inactive: #C4C4C4;
         }
 
         body {
-            font-family: 'Iansui', '芫荽', 'Klee One', 'PingFang TC', '微軟正黑體', sans-serif;
+            /* 套用思源黑體 */
+            font-family: 'Noto Sans TC', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
@@ -40,7 +45,7 @@
         .cloud-status {
             position: fixed; top: 20px; right: 20px; background-color: #fff;
             padding: 8px 15px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 8px; z-index: 2000;
+            font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px; z-index: 2000;
         }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; }
         .dot-loading { background-color: #FFB347; animation: blink 1s infinite; }
@@ -55,13 +60,13 @@
             margin-bottom: 20px; box-sizing: border-box; margin-top: 40px;
         }
 
-        .time-display { font-size: 1.1rem; font-weight: 600; color: var(--text-muted); }
-        .period-display { font-size: 1.2rem; font-weight: bold; color: white; background: var(--primary-color); padding: 6px 20px; border-radius: 20px; }
+        .time-display { font-size: 1.1rem; font-weight: 500; color: var(--text-muted); }
+        .period-display { font-size: 1.2rem; font-weight: 700; color: white; background: var(--primary-color); padding: 6px 20px; border-radius: 20px; }
 
         .controls-container { width: 100%; max-width: 900px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .control-group { background-color: var(--card-bg); padding: 15px; border-radius: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .control-group label { font-size: 1.1rem; font-weight: 600; }
-        select, input[type="date"] { padding: 8px 10px; font-size: 1.1rem; border: 1px solid var(--border-soft); border-radius: 12px; font-family: inherit; cursor: pointer; }
+        .control-group label { font-size: 1.1rem; font-weight: 700; }
+        select, input[type="date"] { padding: 8px 10px; font-size: 1.1rem; border: 1px solid var(--border-soft); border-radius: 12px; font-family: inherit; font-weight: 500; cursor: pointer; }
 
         .view-container { width: 100%; max-width: 900px; display: none; }
         .view-container.active { display: block; }
@@ -69,17 +74,17 @@
         /* 點數視圖 */
         .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
         .student-card { background-color: var(--card-bg); border-radius: 20px; padding: 20px; border: 1px solid var(--border-soft); display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .student-name { font-size: 1.6rem; font-weight: 600; margin-bottom: 10px; }
+        .student-name { font-size: 1.6rem; font-weight: 700; margin-bottom: 10px; }
         .point-badge { width: 75px; height: 75px; background-color: var(--point-bg); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; border: 3px solid var(--point-text); }
         /* 負分時的徽章邊框改色 */
         .point-badge.negative { border-color: var(--point-negative); background-color: #FFF5F5; }
-        .point-number { font-size: 2.2rem; font-weight: 600; color: var(--point-text); }
+        .point-number { font-size: 2.2rem; font-weight: 700; color: var(--point-text); }
         .point-number.negative { color: var(--point-negative); }
 
         .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
-        button.action-btn { border: none; border-radius: 12px; padding: 10px 0; font-size: 1.1rem; font-weight: 600; color: white; cursor: pointer; transition: transform 0.1s; }
+        button.action-btn { border: none; border-radius: 12px; padding: 10px 0; font-size: 1.1rem; font-weight: 700; color: white; cursor: pointer; transition: transform 0.1s; }
         button.action-btn:active { transform: scale(0.92); }
-        .btn-sub-5 { background-color: var(--btn-sub-5); } .btn-sub-1 { background-color: var(--btn-sub-1); } .btn-add-1 { background-color: var(--btn-add-1); } .btn-add-5 { background-color: var(--btn-add-5); }
+        .btn-sub-5 { background-color: var(--btn-sub-5); } .btn-sub-1 { background-color: var(--btn-sub-1); color: #555; } .btn-add-1 { background-color: var(--btn-add-1); color: #555; } .btn-add-5 { background-color: var(--btn-add-5); }
 
         /* 排名與動態獎牌 */
         .ranking-list { display: flex; flex-direction: column; gap: 12px; }
@@ -93,33 +98,33 @@
         .rank-2 { animation: floating 2.5s infinite ease-in-out; font-size: 2.4rem; opacity: 0.9; }
         .rank-3 { animation: floating 3s infinite ease-in-out; font-size: 2.2rem; opacity: 0.8; }
 
-        .rank-name { font-size: 1.5rem; flex: 1; font-weight: 600; }
-        .rank-points { font-size: 1.4rem; font-weight: bold; color: var(--point-text); background: var(--point-bg); padding: 5px 15px; border-radius: 12px; }
+        .rank-name { font-size: 1.5rem; flex: 1; font-weight: 700; }
+        .rank-points { font-size: 1.4rem; font-weight: 700; color: var(--point-text); background: var(--point-bg); padding: 5px 15px; border-radius: 12px; }
         .rank-points.negative { color: var(--point-negative); background: #FFF5F5; }
 
         /* 紀錄視圖 */
-        .record-section-title { font-size: 1.2rem; font-weight: bold; margin: 20px 0 10px 0; color: var(--primary-color); display: flex; align-items: center; gap: 8px; }
+        .record-section-title { font-size: 1.2rem; font-weight: 700; margin: 20px 0 10px 0; color: var(--primary-color); display: flex; align-items: center; gap: 8px; }
         .daily-summary-card { background: #f0f4f0; padding: 15px; border-radius: 20px; margin-bottom: 20px; border: 1px dashed var(--primary-color); }
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
         .summary-item { background: white; padding: 10px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .summary-name { font-size: 1rem; color: var(--text-muted); }
-        .summary-val { font-size: 1.3rem; font-weight: bold; margin-top: 5px; }
+        .summary-name { font-size: 1rem; color: var(--text-muted); font-weight: 500; }
+        .summary-val { font-size: 1.3rem; font-weight: 700; margin-top: 5px; }
 
         .history-list { display: flex; flex-direction: column; gap: 8px; }
         .history-item { background-color: var(--card-bg); padding: 12px 20px; border-radius: 15px; border-left: 5px solid var(--primary-color); display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; }
         .history-item.negative { border-left-color: var(--btn-sub-5); }
-        .history-time { color: var(--text-muted); font-size: 0.9rem; width: 140px; }
-        .history-info { flex: 1; }
-        .history-delta { font-weight: bold; font-size: 1.2rem; }
+        .history-time { color: var(--text-muted); font-size: 0.9rem; width: 140px; font-weight: 500; }
+        .history-info { flex: 1; font-weight: 500; }
+        .history-delta { font-weight: 700; font-size: 1.2rem; }
 
         /* 底部導覽列 */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--nav-bg); box-shadow: 0 -4px 15px rgba(0,0,0,0.05); display: flex; justify-content: center; padding: 10px 0 15px 0; z-index: 1000; }
         .nav-container { width: 100%; max-width: 900px; display: flex; justify-content: space-around; }
-        .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; color: var(--nav-inactive); font-family: inherit; font-weight: 600; font-size: 1rem; cursor: pointer; }
+        .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; color: var(--nav-inactive); font-family: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; }
         .nav-btn.active { color: var(--nav-active); }
         .nav-icon { font-size: 1.6rem; margin-bottom: 3px; }
 
-        .empty-state { text-align: center; color: var(--text-muted); padding: 40px; }
+        .empty-state { text-align: center; color: var(--text-muted); padding: 40px; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -259,8 +264,14 @@
             const subject = document.getElementById('subject-select').value;
             if (!group) return;
 
+            // 休息時間防呆確認
+            const currentPeriod = document.getElementById('period-display').innerText;
+            if (currentPeriod === "休息時間") {
+                const isConfirmed = confirm("現在是休息時間，請再次確認是否要進行點數的調整？");
+                if (!isConfirmed) return; // 老師如果按取消，就停止執行
+            }
+
             if (!studentPoints[subject]) studentPoints[subject] = {};
-            // 【移除限制】：直接加減，不判斷是否小於 0
             studentPoints[subject][name] = (studentPoints[subject][name] || 0) + delta;
 
             const now = new Date();
